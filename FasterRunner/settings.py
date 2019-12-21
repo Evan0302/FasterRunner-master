@@ -16,13 +16,14 @@ import djcelery
 import configparser
 import datetime
 
-# *******configThis******** get form config.conf 快速切换环境
+# *******configThis******** get form myconfig2.conf 快速切换环境
 env = 'test'
 # env = 'prod'
 # ***************configThis********************
 
 cf = configparser.ConfigParser()
-myconfig_dir = os.path.join(os.path.abspath("."),"config.conf")
+
+myconfig_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), "myconfig.conf")
 cf.read(myconfig_dir,encoding='utf-8')
 
 database_name = cf.get(env+'-config', 'NAME')

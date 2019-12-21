@@ -1,7 +1,7 @@
 # Created by .ignore support plugin (hsz.mobi)
 
 # myconfig
-myconfig.conf
+myconfig2.conf
 logs/*.*
 .idea
 apps/fastrunner/migrations/[0]*.py
