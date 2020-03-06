@@ -12,12 +12,14 @@ import requests
 import yaml
 import traceback
 from bs4 import BeautifulSoup
-from httprunner import HttpRunner, logger
+from httprunner.api import HttpRunner, logger
 from requests.cookies import RequestsCookieJar
 
 from fastrunner import models
 from fastrunner.utils.parser import Format
 from FasterRunner.settings import BASE_DIR
+
+from fastrunner.utils.hruntestcasefilter import filterFastrun, objdump2json,fastreportPretty
 
 logger.setup_logger('INFO')
 
@@ -233,13 +235,16 @@ def debug_suite(suite, project, obj, config, save=True):
             testcases = copy.deepcopy(
                 parse_tests(suite[index], debugtalk_content, project, name=obj[index]['name'], config=config[index]))
             test_sets.append(testcases)
+    
+        test_sets= filterFastrun(test_sets)
 
+        print(test_sets)
         kwargs = {
             "failfast": True
         }
         runner = HttpRunner(**kwargs)
-        runner.run(test_sets)
-        summary = parse_summary(runner.summary)
+        summary =runner.run(test_sets)
+        summary = parse_summary(summary)
         if save:
             save_summary("", summary, project, type=1)
         return summary
@@ -276,6 +281,9 @@ def debug_api(api, project, name=None, config=None, save=False, test_data=None, 
         if config and 'failFast' in config.keys():
             fail_fast = True if (config["failFast"] == 'true' or config["failFast"] is True) else False
 
+        testcase_list=filterFastrun(testcase_list)
+    
+        print(testcase_list)
         kwargs = {
             "failfast": fail_fast
         }
@@ -283,9 +291,9 @@ def debug_api(api, project, name=None, config=None, save=False, test_data=None, 
             os.environ["excelName"] = test_data[0]
             os.environ["excelsheet"] = test_data[1]
         runner = HttpRunner(**kwargs)
-        runner.run(testcase_list)
+        summary = runner.run(testcase_list)
 
-        summary = parse_summary(runner.summary)
+        summary = parse_summary(summary)
         if save:
             save_summary(report_name, summary, project, type=1)
         return summary
@@ -350,7 +358,7 @@ def parse_summary(summary):
                 record["meta_data"]["response"]["content"] = \
                     BeautifulSoup(record["meta_data"]["response"]["content"], features="html.parser").prettify()
 
-    return summary
+    return fastreportPretty(summary)
 
 
 def save_summary(name, summary, project, type=2):

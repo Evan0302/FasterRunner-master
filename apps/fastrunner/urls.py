@@ -18,7 +18,7 @@ from django.urls import path
 from django.conf.urls import url, include
 from rest_framework.routers import DefaultRouter
 
-from fastrunner.views import project, api, config, schedule, run, suite, report, download, taskmeta, lock_files
+from fastrunner.views import project, api, config, schedule, run, suite, report, download, taskmeta, lock_files, upload
 
 router = DefaultRouter()
 # 项目信息
@@ -107,5 +107,12 @@ urlpatterns = [
     # run testcase
     path('run_testsuite_pk/<int:pk>/', run.run_testsuite_pk),
     path('run_suite_tree/', run.run_suite_tree),
-    path('run_schedule_test/<int:pk>/', run.run_schedule_test)
+    path('run_schedule_test/<int:pk>/', run.run_schedule_test),
+
+    # excel 文件导入
+    path('excelimport/', upload.excel_import),
+
+    # excel Api导出
+    path('excelexport/', upload.excel_export),
+
 ]
