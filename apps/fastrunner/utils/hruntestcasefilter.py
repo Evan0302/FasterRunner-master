@@ -13,7 +13,7 @@ def list2Dict(ovalue):
 ofunc = {}
 
 
-def filterFastrun(oContent):
+def filterFastrun(oContent, dpath):
     """
     改善Json结构，兼容httprunner2 ,输出到testcase run
     """
@@ -57,7 +57,7 @@ def filterFastrun(oContent):
             odict, ofunc = _filter(odict)
 
     return {"project_mapping": {
-        "PWD": "/mnt/e/git_home/fasterrunner",
+        "PWD": dpath,
         "functions": ofunc,
         "env": {}
     }, 'testcases': oContent
@@ -128,7 +128,7 @@ def fineFastTCBody(tccontent):
     tccontent['request']['form'] = handleDict2Desc('data', tccontent['request'])
     # tccontent['request']['params'] = handleDict2Desc('params')
     # tccontent['request']['form'] = handleDict2Desc('data')
-    tccontent['request']['json'] = {'json': tccontent['request'].pop('json') if 'json' in tccontent['request'] else {}}
+    tccontent['request']['json'] = tccontent['request'].pop('json') if 'json' in tccontent['request'] else {}
     tccontent['request']['files'] = {'files': {}, 'desc': {}}
 
     handle_desc('variables', tccontent)

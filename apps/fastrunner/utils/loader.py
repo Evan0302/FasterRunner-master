@@ -215,6 +215,11 @@ def load_debugtalk(project):
         shutil.rmtree(os.path.dirname(debugtalk_path))
         raise SyntaxError(str(e))
 
+kwargs = {
+    "failfast": True,
+    'log_level': "debug"
+}
+
 
 def debug_suite(suite, project, obj, config, save=True):
     """debug suite
@@ -236,12 +241,10 @@ def debug_suite(suite, project, obj, config, save=True):
                 parse_tests(suite[index], debugtalk_content, project, name=obj[index]['name'], config=config[index]))
             test_sets.append(testcases)
     
-        test_sets= filterFastrun(test_sets)
+        test_sets= filterFastrun(test_sets, os.path.dirname(debugtalk_path))
 
         print(test_sets)
-        kwargs = {
-            "failfast": True
-        }
+
         runner = HttpRunner(**kwargs)
         summary =runner.run(test_sets)
         summary = parse_summary(summary)
@@ -281,12 +284,11 @@ def debug_api(api, project, name=None, config=None, save=False, test_data=None, 
         if config and 'failFast' in config.keys():
             fail_fast = True if (config["failFast"] == 'true' or config["failFast"] is True) else False
 
-        testcase_list=filterFastrun(testcase_list)
+        testcase_list=filterFastrun(testcase_list, os.path.dirname(debugtalk_path))
     
         print(testcase_list)
-        kwargs = {
-            "failfast": fail_fast
-        }
+
+        kwargs['failfast'] = fail_fast
         if test_data is not None:
             os.environ["excelName"] = test_data[0]
             os.environ["excelsheet"] = test_data[1]
@@ -342,21 +344,39 @@ def parse_summary(summary):
 
         for record in detail["records"]:
 
-            for key, value in record["meta_data"]["request"].items():
-                if isinstance(value, bytes):
-                    record["meta_data"]["request"][key] = value.decode("utf-8")
-                if isinstance(value, RequestsCookieJar):
-                    record["meta_data"]["request"][key] = requests.utils.dict_from_cookiejar(value)
+            for odata in record["meta_datas"]["data"]:
 
-            for key, value in record["meta_data"]["response"].items():
-                if isinstance(value, bytes):
-                    record["meta_data"]["response"][key] = value.decode("utf-8")
-                if isinstance(value, RequestsCookieJar):
-                    record["meta_data"]["response"][key] = requests.utils.dict_from_cookiejar(value)
+                for key, value in odata["request"].items():
+                    if isinstance(value, bytes):
+                        odata["request"][key] = value.decode("utf-8")
+                    if isinstance(value, RequestsCookieJar):
+                        odata["request"][key] = requests.utils.dict_from_cookiejar(value)
 
-            if "text/html" in record["meta_data"]["response"]["content_type"]:
-                record["meta_data"]["response"]["content"] = \
-                    BeautifulSoup(record["meta_data"]["response"]["content"], features="html.parser").prettify()
+                for key, value in odata["response"].items():
+                    if isinstance(value, bytes):
+                        odata["response"][key] = value.decode("utf-8")
+                    if isinstance(value, RequestsCookieJar):
+                        odata["response"][key] = requests.utils.dict_from_cookiejar(value)
+
+                if "text/html" in odata["response"]["content_type"]:
+                    odata["response"]["content"] = \
+                        BeautifulSoup(odata["response"]["content_type"], features="html.parser").prettify()
+
+            # for key, value in record["meta_data"]["request"].items():
+            #     if isinstance(value, bytes):
+            #         record["meta_data"]["request"][key] = value.decode("utf-8")
+            #     if isinstance(value, RequestsCookieJar):
+            #         record["meta_data"]["request"][key] = requests.utils.dict_from_cookiejar(value)
+            #
+            # for key, value in record["meta_data"]["response"].items():
+            #     if isinstance(value, bytes):
+            #         record["meta_data"]["response"][key] = value.decode("utf-8")
+            #     if isinstance(value, RequestsCookieJar):
+            #         record["meta_data"]["response"][key] = requests.utils.dict_from_cookiejar(value)
+            #
+            # if "text/html" in record["meta_data"]["response"]["content_type"]:
+            #     record["meta_data"]["response"]["content"] = \
+            #         BeautifulSoup(record["meta_data"]["response"]["content"], features="html.parser").prettify()
 
     return fastreportPretty(summary)
 

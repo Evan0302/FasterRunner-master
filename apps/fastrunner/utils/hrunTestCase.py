@@ -221,10 +221,10 @@ def addapi(apis, nodeid,projectid):
     return
 
 def loadxls():
-    wb = xlrd.open_workbook("/mnt/d/demo_httprunner.xls")
-    jj = HrunTestCase().fromSheet2List(wb.sheet_by_name('API_list'))
+    wb = xlrd.open_workbook("d:/demo_httprunner.xls")
+    jj = HrunTestCase().fromSheet2List(wb.sheet_by_name('demo-testcase-get-token'))
     print(jj)
-    addapi(jj[0], 4, 2)
+    # addapi(jj[0], 4, 2)
 
 if __name__ == "__main__":
     loadxls()
