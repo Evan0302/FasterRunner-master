@@ -1,7 +1,7 @@
 Django == 2.1.11
 django-cors-headers == 2.4.0
 djangorestframework == 3.9.2
-HttpRunner == 1.5.15
+HttpRunner == 2.5.7
 PyMySQL == 0.9.3
 beautifulsoup4 == 4.6.3
 tornado == 5.1.1

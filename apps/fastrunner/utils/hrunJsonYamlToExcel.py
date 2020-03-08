@@ -4,6 +4,7 @@ import os
 
 import xlwt
 import yaml
+from har2case.core import HarParser
 
 
 class Hrun_JsonYaml:
@@ -14,8 +15,12 @@ class Hrun_JsonYaml:
         self.objContent = jsonObj
         self._rowIndex = 0
         self.excel = None
+
         self._listFields = []  # 字段列表
         self._fieldRow = 0  # 字段行号
+
+        if self.objContent:
+            self._initContent()
 
     def load_file(self, sfilename=''):
         if sfilename != '': self.fileName = sfilename
@@ -29,11 +34,16 @@ class Hrun_JsonYaml:
             self.objContent = self.loadYaml(self.fileName)
         elif file_suffix == ".csv":
             return None  # load_csv_file(self.fileName)
+        elif file_suffix == ".har":
+            # 获取 抓包工具的har文件内容
+            self.objContent = self.loadHar(self.fileName)
         else:
             # '' or other suffix
             err_msg = u"Unsupported file format: {}".format(self.fileName)
 
             return None
+
+        self._initContent()
 
         return self.objContent
 
@@ -45,21 +55,45 @@ class Hrun_JsonYaml:
         with io.open(filename, 'r', encoding='utf-8') as jfile:
             return json.load(jfile)
 
-    _caseItemIndex = 0
+    def loadHar(self, filename):
 
-    def getListNextItem(self, iName):
-        if self._caseItemIndex >= len(self.objContent):
-            return None
+        ohar = HarParser(filename)
+        return ohar._make_testcase('v2')
 
-        if isinstance(self.objContent, dict) and ('iName' not in self.objContent):
-            return None
+    def _initContent(self):
+        """
+        检查objcontent
+        并 初试化 config、testcase
+        :return:
+        """
+        self.testname = 'test'
+        self.oConfig = {}
+        self.oTestCase = []
 
-        oCase = self.objContent[self._caseItemIndex]
-        if iName in oCase:
-            self._caseItemIndex += 1
-            return oCase
-        else:
-            return None
+        if isinstance(self.objContent, dict):
+            # 获取 config
+            self.oConfig = self.objContent['config'] if 'config' in self.objContent else None
+
+            # 获取testcase
+            self.testname = self.testname if self.testname in self.objContent else \
+                ('teststeps' if 'teststeps' in self.objContent else '')
+
+            if isinstance(self.objContent[self.testname], list):
+                self.oTestCase = self.objContent[self.testname]
+            else:
+                self.oTestCase = None
+
+        elif isinstance(self.objContent, list):
+            for oitem in self.objContent:
+                if 'config' in oitem:
+                    # 获取 config
+                    self.oConfig = oitem['config']
+                else:
+                    # 获取testcase
+                    self.testname = self.testname if self.testname in oitem else \
+                        ('teststeps' if 'teststeps' in oitem else '')
+                    self.oTestCase.append(oitem[self.testname])
+
 
     def initSheet(self):
         from xlwt.Style import default_style
@@ -99,8 +133,7 @@ class Hrun_JsonYaml:
         self.autoExcelWidth(self.sheet)
 
     def newConfig(self, sheet):
-        oconfig = self.getListNextItem('config')
-        if oconfig is None:
+        if self.oConfig is None:
             # 添加空的config
             sheet.write(self._rowIndex, 0, "config")
             self._rowIndex += 1
@@ -115,7 +148,7 @@ class Hrun_JsonYaml:
 
         icol = 1
         sheet.write(self._rowIndex, 0, '=')
-        for (k, v) in oconfig['config'].items():
+        for (k, v) in self.oConfig.items():
             sheet.write(self._rowIndex, icol, k)
             if k in ['variables']:
                 v = self.obj2Lines(v)
@@ -144,7 +177,7 @@ class Hrun_JsonYaml:
         sheet.write(self._rowIndex, 0, '=')
         self._fieldRow = self._rowIndex
 
-        for (k, v) in otestcase['test'].items():
+        for (k, v) in otestcase.items():
             if k.startswith('request'):
                 for (k, v) in v.items():
                     self._addField('request.' + str(k))
@@ -216,19 +249,17 @@ class Hrun_JsonYaml:
         self._rowIndex += 1
 
         isFRow = False
-        while True:
-            otestcase = self.getListNextItem('test')
-            if otestcase == None: break
+        for otestcase in self.oTestCase:
 
             if not isFRow:  # 填写表头字段名  行
                 self.writeFieldRow(otestcase, sheet)
                 isFRow = not isFRow
 
             icol = 1
-            for (k, v) in otestcase['test'].items():
+            for (k, v) in otestcase.items():
                 if k.startswith('request'):
                     for (k, v) in v.items():
-                        if k in ['headers', 'json']:
+                        if k in ['headers', 'json', 'params']:
                             v = self.obj2Lines(v)
                         writeFieldValue('request.' + k, v)
                         icol += 1
@@ -242,7 +273,6 @@ class Hrun_JsonYaml:
                     writeFieldValue(k, v)
                     icol += 1
             self._rowIndex += 1
-
 
 
     def obj2Lines(self, ovalue):
@@ -270,11 +300,16 @@ class Hrun_JsonYaml:
             return str(ovalue)
 
 
+
 def loadfile2excel():
-    infile = "e:/git_home/httprunner/tests/data/demo_testcase_hardcode.yml"
+    # infile = "e:/git_home/httprunner/tests/data/demo_testcase_hardcode.yml"
     # "e:/git_home/httprunner/docs/data/demo-quickstart.json"
 
-    hj = Hrun_JsonYaml(infile, 'yy.xls')
+    infile = "d:/vvv.json"
+    infile = "d:/ccc.json"
+    infile = "d:/hhhh.har"
+
+    hj = Hrun_JsonYaml(infile, 'ppp.xls')
     hj.load_file()
 
     hj.toExcel()
@@ -291,10 +326,10 @@ def loadjsonstr2excel():
 
     print(oj)
     hj = Hrun_JsonYaml(jsonObj=oj, infilename='apiexport')
-    hj.toExcelWorkbook().save('/mnt/d/xxx.xls')
+    hj.toExcelWorkbook().save('d:/yyyy.xls')
 
 
 if __name__ == "__main__":
-    # loadfile2excel()
+    loadfile2excel()
 
-    loadjsonstr2excel()
+    # loadjsonstr2excel()

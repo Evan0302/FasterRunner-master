@@ -1,7 +1,7 @@
 import json
 
 import xlrd
-
+from har2case.core import HarParser
 
 from fastrunner.utils.hrunutils import checkStr2Int_Bool, strStrip, json2File
 from fastrunner.utils.parser import Format
@@ -49,7 +49,7 @@ class HrunTestCase:
                     # tmplist.append(self.parserConfig(sheet, i))
 
                     iRow += 2
-                elif sheet.row_values(iRow, 0, 1)[0] in ['teststeps','api']:
+                elif sheet.row_values(iRow, 0, 1)[0] in ['teststeps', 'api']:
                     tcDict['teststeps'] = self.parserTestcase2List(sheet, iRow, sheet.row_values(iRow, 0, 1)[0])
                     # tmplist.extend(self.parserTestcase(sheet, i, sheet.row_values(i, 0, 1)[0]))
                     # tmplist.append(self.parserTestcase(sheet, i, sheet.row_values(i, 0, 1)[0]))
@@ -194,13 +194,11 @@ class HrunTestCase:
         return xkey, xkeyvalue[1].strip() if len(xkeyvalue) == 2 else ''
 
 
-
-def addapi(apis, nodeid,projectid):
+def addapi(apis, nodeid, projectid):
     from fastrunner.utils.hruntestcasefilter import fineFastTCBody
     # from fastrunner import models
 
     for xapi in apis['teststeps']:
-
         api = Format(fineFastTCBody(xapi))
         api.parse()
 
@@ -217,14 +215,77 @@ def addapi(apis, nodeid,projectid):
 
         # models.API.objects.create(**api_body)
 
-
     return
+
+
+class HrunHarParser(HarParser):
+    """
+    处理har文件内容
+    """
+
+    def __init__(self, oContent=None):
+        super().__init__('')
+        if oContent:
+            self.harContent = oContent
+            self.content_json = self._loadContent()
+
+    def _loadContent(self):
+        try:
+            import json
+            content_json = json.loads(self.harContent)
+            return content_json["log"]["entries"]
+        except (KeyError, TypeError):
+            raise Exception('HAR file content error')
+
+    def _prepare_teststeps(self, fmt_version):
+        """ make teststep list.
+            teststeps list are parsed from HAR log entries list.
+
+        """
+
+        def is_exclude(url, exclude_str):
+            exclude_str_list = exclude_str.split("|")
+            for exclude_str in exclude_str_list:
+                if exclude_str and exclude_str in url:
+                    return True
+
+            return False
+
+        teststeps = []
+        # log_entries = utils.load_har_log_entries(self.har_file_path)
+        for entry_json in self.content_json:
+            url = entry_json["request"].get("url")
+            if self.filter_str and self.filter_str not in url:
+                continue
+
+            if is_exclude(url, self.exclude_str):
+                continue
+
+            if fmt_version == "v1":
+                teststeps.append(
+                    {"test": self._prepare_teststep(entry_json)}
+                )
+            else:
+                # v2
+                teststeps.append(
+                    self._prepare_teststep(entry_json)
+                )
+
+        return teststeps
+
+    def get_HrunTestcases(self, file_type="JSON", fmt_version="v2"):
+
+        testcase = self._make_testcase(fmt_version)
+
+        return testcase
+
 
 def loadxls():
     wb = xlrd.open_workbook("d:/demo_httprunner.xls")
     jj = HrunTestCase().fromSheet2List(wb.sheet_by_name('demo-testcase-get-token'))
     print(jj)
     # addapi(jj[0], 4, 2)
+
 
 if __name__ == "__main__":
     loadxls()

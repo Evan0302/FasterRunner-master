@@ -109,8 +109,8 @@ urlpatterns = [
     path('run_suite_tree/', run.run_suite_tree),
     path('run_schedule_test/<int:pk>/', run.run_schedule_test),
 
-    # excel 文件导入
-    path('excelimport/', upload.excel_import),
+    # excel/har 文件导入
+    path('fileimport/', upload.file_import),
 
     # excel Api导出
     path('excelexport/', upload.excel_export),

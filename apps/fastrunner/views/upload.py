@@ -8,7 +8,7 @@ from fastrunner.utils import response
 from fastrunner.utils.decorator import request_log
 from fastrunner.utils.hrunJsonYamlToExcel import Hrun_JsonYaml
 
-from fastrunner.utils.hrunTestCase import HrunTestCase
+from fastrunner.utils.hrunTestCase import HrunTestCase, HrunHarParser
 from fastrunner.utils.hruntestcasefilter import fineToExcel
 from fastrunner.utils.parser import Format
 
@@ -55,7 +55,7 @@ def excel_export(request):
 
 @api_view(['POST'])
 @request_log(level='DEBUG')
-def excel_import(request):
+def file_import(request):
     '''
     用例导入
     token:
@@ -65,19 +65,45 @@ def excel_import(request):
 
     print("开始import")
     if request.method == 'POST':
-
         try:
+            import os
             for k, f in request.FILES.items():
                 paper_file = f
                 nodeid = request.POST['nodeid']
                 projectid = request.POST['projectid']
-                sheetname = request.POST['sheetname']
-                wb = xlrd.open_workbook(filename=None, file_contents=paper_file.read())
 
-                jj = HrunTestCase().fromSheet2List(wb.sheet_by_name(sheetname))
+                fileext = os.path.splitext(paper_file.name)[1].lower()
+                if fileext == '.xls':
+                    # 判断文件是否excel
+                    sheetname = request.POST['sheetname']
+                    wb = xlrd.open_workbook(filename=None, file_contents=paper_file.read())
 
-                print(jj)
-                addapi(jj[0], nodeid,projectid )
+                    jj = HrunTestCase().fromSheet2List(wb.sheet_by_name(sheetname))
+
+                    print(jj)
+                    addapi(jj[0], nodeid,projectid )
+                elif fileext == '.har':
+                    # 处理har文件
+                    file_contents = paper_file.read()
+                    try:
+                        har = HrunHarParser(file_contents)
+                        jj = har.get_HrunTestcases()
+                        print(jj)
+                        addapi(jj, nodeid,projectid )
+
+                    except (KeyError, TypeError):
+                        return Response({
+                                'code': '00322',
+                                'success': False,
+                                'msg': 'HAR file content error' + f.name
+                            })
+                else:
+                    return Response({
+                                'code': '00321',
+                                'success': False,
+                                'msg': '不支持的文件格式' + f.name
+                            })
+
 
         except DataError:
             return Response(response.DATA_TO_LONG)
