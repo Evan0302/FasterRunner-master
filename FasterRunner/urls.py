@@ -22,6 +22,9 @@ from rest_framework_jwt.views import obtain_jwt_token
 import xadmin
 from FasterRunner.settings import MEDIA_ROOT, STATICFILES_DIRS
 
+from rest_framework.schemas import get_schema_view
+from rest_framework_swagger.renderers import SwaggerUIRenderer, OpenAPIRenderer
+
 urlpatterns = [
     url(r'^api/rtf-auth/', include('rest_framework.urls', namespace='rest_framework')),
     url(r'^media/(?P<path>.*)$', serve, {"document_root": MEDIA_ROOT}),
@@ -32,5 +35,8 @@ urlpatterns = [
     url(r'^api/user/login/', obtain_jwt_token),
 
     url(r'^api/xadmin/', xadmin.site.urls),
-    path('api/fastrunner/', include('fastrunner.urls'))
+    path('api/fastrunner/', include('fastrunner.urls')),
+
+    path('swagger-docs/', get_schema_view(title='研发统一平台 api、docs',
+                                          renderer_classes=[OpenAPIRenderer, SwaggerUIRenderer])),
 ]

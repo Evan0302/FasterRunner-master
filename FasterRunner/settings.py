@@ -73,6 +73,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'fastrunner',
     'rest_framework',
+
+    # 文档使用
+    'rest_framework_swagger',
+
     'corsheaders',
     'djcelery',
     'rest_framework.authtoken',
@@ -116,22 +120,22 @@ WSGI_APPLICATION = 'FasterRunner.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-#     }
-# }
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': database_name,
-        'USER': database_user,
-        'PASSWORD': database_password,
-        'HOST': database_host,
-        'PORT': database_port
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': database_name,
+#         'USER': database_user,
+#         'PASSWORD': database_password,
+#         'HOST': database_host,
+#         'PORT': database_port
+#     }
+# }
 
 
 # Password validation
@@ -173,8 +177,33 @@ STATICFILES_DIRS = (
     os.path.join(BASE_DIR, "static"),
 )
 
-# rest_framework config
 
+# swagger 配置项
+SWAGGER_SETTINGS = {
+    #基础样式
+    'SECURITY_DEFINITIONS': {
+        "basic": {
+            'type': 'basic'
+        }
+    },
+    #如果需要登录才能够查看接口文档, 登录的链接使用restframework自带的.
+    'LOGIN_URL': 'rest_framework:login',
+    'LOGOUT_URL': 'rest_framework:logout',
+
+    # 'DOC_EXPANSION': None,
+    # 'SHOW_REQUEST_HEADERS':True,
+    'USE_SESSION_AUTH': True,
+    # 'DOC_EXPANSION': 'list',
+    # 接口文档中方法列表以首字母升序排列
+    'APIS_SORTER': 'alpha',
+    # 如果支持json提交, 则接口文档中包含json输入框
+    'JSON_EDITOR': True,
+    # 方法列表字母排序
+    'OPERATIONS_SORTER': 'alpha',
+    'VALIDATOR_URL': None,
+}
+
+# rest_framework config
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
